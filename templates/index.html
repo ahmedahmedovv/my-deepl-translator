@@ -139,6 +139,28 @@
         .swapping .swap-content {
             transform: rotateX(180deg);
         }
+
+        /* Add responsive text sizes */
+        @media (max-width: 640px) {
+            .text-lg {
+                font-size: 1rem;
+                line-height: 1.5rem;
+            }
+            
+            textarea {
+                font-size: 1rem;
+                line-height: 1.5rem;
+            }
+        }
+
+        /* Adjust modal padding for mobile */
+        @media (max-width: 640px) {
+            #apiKeyModal .max-w-md,
+            #documentModal .max-w-md {
+                margin: 0.5rem;
+                padding: 1rem;
+            }
+        }
     </style>
     <script>
         tailwind.config = {
@@ -149,60 +171,50 @@
 <body class="bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
     <!-- Minimal Header -->
     <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-50">
-        <div class="container mx-auto h-14 px-6 relative flex items-center">
+        <div class="container mx-auto h-12 sm:h-14 px-3 sm:px-6 relative flex items-center">
             <!-- Left side -->
-            <div class="absolute left-6">
-                <img src="https://www.deepl.com/img/logo/deepl-logo-blue.svg" alt="DeepL Logo" class="h-6 dark:invert">
+            <div class="absolute left-3 sm:left-6">
+                <img src="https://www.deepl.com/img/logo/deepl-logo-blue.svg" alt="DeepL Logo" class="h-5 sm:h-6 dark:invert">
             </div>
             
-            <!-- Center -->
-            <div class="flex-1 flex justify-center">
-                <button onclick="swapLanguages()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all transform hover:scale-110 duration-200 micro-button"
-                    title="Swap languages">
-                    <i class="fas fa-exchange-alt text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-lg"></i>
-                </button>
-            </div>
-
             <!-- Right side -->
-            <div class="absolute right-6 flex items-center gap-4">
+            <div class="absolute right-3 sm:right-6 flex items-center gap-2 sm:gap-4">
                 <!-- API Usage Bar -->
-                <div class="flex items-center gap-2" title="API Usage">
-                    <div class="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div class="hidden sm:flex items-center gap-2" title="API Usage">
+                    <div class="w-24 sm:w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div id="apiUsageBar" class="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300" style="width: 0%"></div>
                     </div>
                     <span id="apiUsageText" class="text-xs text-gray-600 dark:text-gray-400">0%</span>
                 </div>
 
-                <!-- Add Document Translation Button -->
+                <!-- Buttons -->
                 <button onclick="openDocumentModal()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
                     title="Translate Document">
-                    <i class="fas fa-file-upload"></i>
+                    <i class="fas fa-file-upload text-sm sm:text-base"></i>
                 </button>
 
                 <button onclick="openApiKeyModal()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
                     title="Configure API Key">
-                    <i class="fas fa-key text-lg"></i>
+                    <i class="fas fa-key text-sm sm:text-base"></i>
                 </button>
 
                 <button onclick="toggleTheme()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 relative micro-button"
+                    class="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
                     title="Toggle theme">
-                    <i class="fas fa-sun text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-0 dark:opacity-100"></i>
-                    <i class="fas fa-moon text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-100 dark:opacity-0"></i>
+                    <i class="fas fa-sun text-sm sm:text-base"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-4 pt-16 pb-4 max-w-[1920px] h-[calc(100vh-4rem)]">
+    <main class="container mx-auto px-2 sm:px-4 pt-14 sm:pt-16 pb-4 max-w-[1920px] h-[calc(100vh-3rem)]">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg h-full transition-colors duration-200">
             <div class="grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
                 <!-- Input Section -->
                 <div class="relative h-full flex flex-col">
-                    <div class="flex justify-between items-center h-[52px] px-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center h-[44px] sm:h-[52px] px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-3">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Input Text</label>
                         </div>
@@ -234,7 +246,7 @@
                 
                 <!-- Output Section -->
                 <div class="relative h-full flex flex-col">
-                    <div class="flex justify-between items-center h-[52px] px-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center h-[44px] sm:h-[52px] px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-3">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Translated Text</label>
                             <div class="h-4 w-px bg-gray-200 dark:bg-gray-600"></div>
