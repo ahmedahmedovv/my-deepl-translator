@@ -124,6 +124,10 @@ def upload_document():
 
         translator = get_translator(api_key)
         
+        # Get usage before translation
+        usage_before = translator.get_usage()
+        print(f"Usage before document translation: {usage_before.character.count} / {usage_before.character.limit}")
+
         # Save input file temporarily
         input_filename = secure_filename(file.filename)
         input_filepath = os.path.join(app.config['UPLOAD_FOLDER'], input_filename)
@@ -143,6 +147,12 @@ def upload_document():
                     target_lang=target_lang,
                     source_lang=source_lang if source_lang else None
                 )
+            
+            # Get usage after translation
+            usage_after = translator.get_usage()
+            characters_used = usage_after.character.count - usage_before.character.count
+            print(f"Document translation used {characters_used} characters")
+            print(f"Usage after document translation: {usage_after.character.count} / {usage_after.character.limit}")
             
             # Return translated file
             response = send_file(
