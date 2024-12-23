@@ -178,11 +178,27 @@
                         text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                         placeholder="Enter your DeepL API key">
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    You can find your API key in your 
-                    <a href="https://www.deepl.com/account/summary" target="_blank" 
-                        class="text-blue-600 dark:text-blue-400 hover:underline">DeepL account</a>.
-                </p>
+                
+                <!-- Add detailed instructions -->
+                <div class="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+                    <p class="font-medium">How to get your DeepL API key:</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Go to <a href="https://www.deepl.com/pro-api" target="_blank" 
+                            class="text-blue-600 dark:text-blue-400 hover:underline">DeepL API</a> and sign up for an account</li>
+                        <li>Choose between Free or Pro API plan</li>
+                        <li>After registration, go to your <a href="https://www.deepl.com/account/summary" target="_blank" 
+                            class="text-blue-600 dark:text-blue-400 hover:underline">Account Summary</a></li>
+                        <li>Copy your Authentication Key (API key)</li>
+                        <li>Paste it here and click Save</li>
+                    </ol>
+                    <div class="mt-3 p-3 bg-blue-50 dark:bg-gray-700 rounded-lg">
+                        <p class="text-blue-800 dark:text-blue-300">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Free API accounts have a limit of 500,000 characters per month. The usage bar above will help you track your usage.
+                        </p>
+                    </div>
+                </div>
+                
                 <div class="flex justify-end gap-3 mt-6">
                     <button onclick="closeApiKeyModal()" 
                         class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
@@ -191,6 +207,72 @@
                     <button onclick="saveApiKey()" 
                         class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this after the main translation grid -->
+    <div class="fixed bottom-4 right-4">
+        <button onclick="openDocumentModal()" 
+            class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg transition-colors">
+            <i class="fas fa-file-upload"></i>
+            Translate Document
+        </button>
+    </div>
+
+    <!-- Add this new modal -->
+    <div id="documentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Translate Document</h2>
+                <button onclick="closeDocumentModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Document</label>
+                    <input type="file" id="documentInput" 
+                        class="block w-full text-sm text-gray-500 dark:text-gray-400
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-medium
+                        file:bg-blue-50 file:text-blue-700
+                        dark:file:bg-gray-700 dark:file:text-blue-400
+                        hover:file:bg-blue-100 dark:hover:file:bg-gray-600
+                        file:cursor-pointer">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Supported formats: .docx, .doc, .pptx, .xlsx, .pdf, .html, .txt, .xlf, .srt
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Language</label>
+                    <select id="documentTargetLang" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
+                        text-gray-900 dark:text-white">
+                        <!-- Use the same options as your main translation select -->
+                    </select>
+                </div>
+
+                <div id="documentProgress" class="hidden">
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300 w-full animate-pulse"></div>
+                    </div>
+                    <p class="text-sm text-center mt-2 text-gray-600 dark:text-gray-400">Translating document...</p>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="closeDocumentModal()" 
+                        class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="translateDocument()" 
+                        class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Translate
                     </button>
                 </div>
             </div>
@@ -553,6 +635,81 @@
 
         // Initial API usage check
         checkApiUsage();
+
+        // Document translation handling
+        const documentModal = document.getElementById('documentModal');
+        const documentProgress = document.getElementById('documentProgress');
+        
+        function openDocumentModal() {
+            documentModal.classList.remove('hidden');
+            // Copy options from main language selector to document language selector
+            const documentTargetLang = document.getElementById('documentTargetLang');
+            const mainTargetLang = document.getElementById('targetLang');
+            documentTargetLang.innerHTML = mainTargetLang.innerHTML;
+            documentTargetLang.value = mainTargetLang.value;
+        }
+        
+        function closeDocumentModal() {
+            documentModal.classList.add('hidden');
+            document.getElementById('documentInput').value = '';
+            documentProgress.classList.add('hidden');
+        }
+        
+        async function translateDocument() {
+            const file = document.getElementById('documentInput').files[0];
+            if (!file) {
+                alert('Please select a file to translate');
+                return;
+            }
+            
+            const targetLang = document.getElementById('documentTargetLang').value;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('target_lang', targetLang);
+            
+            // Add API key if exists
+            const apiKey = localStorage.getItem('deepl_api_key');
+            if (apiKey) {
+                formData.append('api_key', apiKey);
+            }
+            
+            try {
+                documentProgress.classList.remove('hidden');
+                
+                const response = await fetch('/upload-document', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Translation failed');
+                }
+                
+                // Get filename from response headers or use a default name
+                const contentDisposition = response.headers.get('content-disposition');
+                const filename = contentDisposition
+                    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                    : 'translated_document';
+                
+                // Create blob from response and download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                closeDocumentModal();
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                documentProgress.classList.add('hidden');
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,16 +1,28 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import deepl
 import os
 from dotenv import load_dotenv
+import time
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
 app = Flask(__name__)
 DEFAULT_API_KEY = os.getenv('DEEPL_API_KEY')
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'docx', 'doc', 'pptx', 'xlsx', 'pdf', 'htm', 'html', 'txt', 'xlf', 'xliff', 'srt'}
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def get_translator(api_key=None):
     """Get a DeepL translator instance with the given API key or default key."""
     return deepl.Translator(api_key or DEFAULT_API_KEY)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
@@ -88,6 +100,75 @@ def translate():
         })
     except Exception as e:
         print(f"Translation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/upload-document', methods=['POST'])
+def upload_document():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+            
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'File type not supported'}), 400
+
+        target_lang = request.form.get('target_lang')
+        source_lang = request.form.get('source_lang')
+        api_key = request.form.get('api_key') or DEFAULT_API_KEY
+        
+        if not target_lang:
+            return jsonify({'error': 'Target language is required'}), 400
+
+        translator = get_translator(api_key)
+        
+        # Save input file temporarily
+        input_filename = secure_filename(file.filename)
+        input_filepath = os.path.join(app.config['UPLOAD_FOLDER'], input_filename)
+        file.save(input_filepath)
+        
+        # Create output filepath
+        output_filename = f"translated_{input_filename}"
+        output_filepath = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+        
+        try:
+            # Translate document
+            with open(input_filepath, 'rb') as in_file, \
+                 open(output_filepath, 'wb') as out_file:
+                translator.translate_document(
+                    in_file,
+                    out_file,
+                    target_lang=target_lang,
+                    source_lang=source_lang if source_lang else None
+                )
+            
+            # Return translated file
+            response = send_file(
+                output_filepath,
+                as_attachment=True,
+                download_name=output_filename
+            )
+            
+            # Clean up files after sending
+            @response.call_on_close
+            def cleanup():
+                # Clean up both input and output files
+                if os.path.exists(input_filepath):
+                    os.remove(input_filepath)
+                if os.path.exists(output_filepath):
+                    os.remove(output_filepath)
+                    
+            return response
+            
+        finally:
+            # Ensure cleanup happens even if sending file fails
+            if os.path.exists(input_filepath):
+                os.remove(input_filepath)
+            
+    except Exception as e:
+        print(f"Document translation error: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
