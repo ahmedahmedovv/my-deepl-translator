@@ -6,6 +6,140 @@
     <title>Personal DeepL Translator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Enhanced Micro-interaction animations */
+        @keyframes pulse-scale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes slide-in {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        @keyframes character-count-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); color: #3B82F6; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes swap-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes loading-pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .ripple-effect {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple-effect::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 100%;
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        .animate-character-count {
+            animation: character-count-pulse 0.3s ease-out;
+        }
+
+        .animate-swap {
+            animation: swap-rotate 0.5s ease-out;
+        }
+
+        .loading-pulse {
+            animation: loading-pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Enhanced button effects */
+        .micro-button {
+            position: relative;
+            transform: translateY(0) scale(1);
+            transition: all 0.15s ease-out;
+        }
+
+        .micro-button:hover {
+            transform: translateY(-1px) scale(1.05);
+        }
+
+        .micro-button:active {
+            transform: translateY(1px) scale(0.95);
+        }
+
+        /* Enhanced focus states */
+        textarea:focus, input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            border-color: #3B82F6;
+            transition: all 0.2s ease-out;
+        }
+
+        /* Success animation container */
+        .success-animation {
+            position: relative;
+        }
+
+        .success-animation::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: success-ripple 0.6s ease-out;
+        }
+
+        @keyframes success-ripple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(20); opacity: 0; }
+        }
+
+        /* Language swap animation */
+        .swap-container {
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .swap-content {
+            transition: transform 0.3s ease-out;
+            transform-style: preserve-3d;
+        }
+
+        .swapping .swap-content {
+            transform: rotateX(180deg);
+        }
+    </style>
     <script>
         tailwind.config = {
             darkMode: 'class'
@@ -24,7 +158,7 @@
             <!-- Center -->
             <div class="flex-1 flex justify-center">
                 <button onclick="swapLanguages()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all transform hover:scale-110 duration-200"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all transform hover:scale-110 duration-200 micro-button"
                     title="Swap languages">
                     <i class="fas fa-exchange-alt text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-lg"></i>
                 </button>
@@ -42,19 +176,19 @@
 
                 <!-- Add Document Translation Button -->
                 <button onclick="openDocumentModal()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
                     title="Translate Document">
                     <i class="fas fa-file-upload"></i>
                 </button>
 
                 <button onclick="openApiKeyModal()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 micro-button"
                     title="Configure API Key">
                     <i class="fas fa-key text-lg"></i>
                 </button>
 
                 <button onclick="toggleTheme()" 
-                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 relative"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 relative micro-button"
                     title="Toggle theme">
                     <i class="fas fa-sun text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-0 dark:opacity-100"></i>
                     <i class="fas fa-moon text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-100 dark:opacity-0"></i>
@@ -318,10 +452,24 @@
         let translateTimeout;
         const TRANSLATE_DELAY = 500; // ms delay before translating
 
-        // Update input handler to include auto-translation
+        // Enhanced character count update
+        let previousCount = 0;
+        function updateCharacterCount(count) {
+            const countElement = document.getElementById('inputCount');
+            countElement.textContent = `${count}/5000`;
+            
+            if (count !== previousCount) {
+                countElement.classList.remove('animate-character-count');
+                void countElement.offsetWidth; // Force reflow
+                countElement.classList.add('animate-character-count');
+            }
+            previousCount = count;
+        }
+
+        // Enhanced input handler
         inputText.addEventListener('input', function() {
-            // Update character count
-            inputCount.textContent = `${this.value.length}/5000`;
+            updateCharacterCount(this.value.length);
+            
             if (this.value.length > 0) {
                 this.classList.add('text-gray-900', 'dark:text-white');
             } else {
@@ -329,14 +477,10 @@
                 outputText.value = '';
             }
 
-            // Clear previous timeout
             clearTimeout(translateTimeout);
             
             if (this.value.trim()) {
-                // Show auto-translate status
                 document.getElementById('autoTranslateStatus').classList.remove('hidden');
-                
-                // Set new timeout for translation
                 translateTimeout = setTimeout(() => {
                     translateText();
                 }, TRANSLATE_DELAY);
@@ -375,11 +519,15 @@
             outputText.select();
             document.execCommand('copy');
             const button = document.querySelector('button[onclick="copyTranslation()"]');
+            
+            // Add success animation
+            button.classList.add('success-animation');
             button.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            button.classList.add('bg-blue-50', 'dark:bg-gray-700');
+            button.classList.add('bg-blue-50', 'dark:bg-gray-700', 'animate-pulse-scale');
+            
             setTimeout(() => {
+                button.classList.remove('success-animation', 'bg-blue-50', 'dark:bg-gray-700', 'animate-pulse-scale');
                 button.innerHTML = '<i class="far fa-copy"></i> Copy';
-                button.classList.remove('bg-blue-50', 'dark:bg-gray-700');
             }, 2000);
         }
 
@@ -397,7 +545,7 @@
             navigator.clipboard.writeText(cleanedText).then(() => {
                 const button = document.querySelector('button[onclick="xCopyTranslation()"]');
                 const originalContent = '<i class="fas fa-broom"></i> XCopy <i class="fas fa-info-circle ml-1 text-gray-400 cursor-pointer" onclick="toggleTooltip(event)"></i>';
-                button.innerHTML = '<i class="fas fa-check"></i> Cleaned!';
+                button.innerHTML = '<i class="fas fa-check"></i> Cleaned and copied!';
                 button.classList.add('bg-blue-50', 'dark:bg-gray-700');
                 setTimeout(() => {
                     button.innerHTML = originalContent;
@@ -409,19 +557,27 @@
         }
 
         function swapLanguages() {
-            const targetLang = document.getElementById('targetLang');
-            // Swap text content if there's any text
+            const container = document.querySelector('.grid');
+            const button = document.querySelector('button[onclick="swapLanguages()"]');
+            
+            button.classList.add('animate-swap');
+            container.classList.add('swapping');
+            
             if (inputText.value.trim() || outputText.value.trim()) {
                 const tempText = inputText.value;
                 inputText.value = outputText.value;
                 outputText.value = tempText;
-                inputCount.textContent = `${inputText.value.length}/5000`;
+                updateCharacterCount(inputText.value.length);
                 
-                // Retranslate if there's text in the input
                 if (inputText.value.trim()) {
                     translateText();
                 }
             }
+            
+            setTimeout(() => {
+                button.classList.remove('animate-swap');
+                container.classList.remove('swapping');
+            }, 500);
         }
 
         // Update keyboard shortcuts
@@ -488,7 +644,7 @@
             }
         }
 
-        // Update translateText function to track API usage
+        // Enhanced translate function with success feedback
         async function translateText() {
             const text = inputText.value.trim();
             const targetLang = document.getElementById('targetLang').value;
@@ -499,8 +655,14 @@
                 return;
             }
 
+            if (!apiKey) {
+                alert('Please configure your DeepL API key first');
+                openApiKeyModal();
+                return;
+            }
+
             try {
-                loadingIndicator.classList.remove('hidden');
+                showLoading();
                 const response = await fetch('/translate', {
                     method: 'POST',
                     headers: {
@@ -517,46 +679,88 @@
                 const data = await response.json();
                 
                 if (response.ok) {
+                    outputText.classList.add('success-animation', 'animate-fade-in');
                     outputText.value = data.translated_text;
-                    // Update API usage if provided in response
-                    if (data.character_count !== undefined) {
+                    
+                    setTimeout(() => {
+                        outputText.classList.remove('success-animation', 'animate-fade-in');
+                    }, 300);
+                    
+                    // Update API usage with the latest data
+                    if (data.character_count !== undefined && data.character_limit !== undefined) {
+                        apiUsage = {
+                            character_count: data.character_count,
+                            character_limit: data.character_limit
+                        };
                         updateApiUsage(data.character_count);
                     }
                 } else {
                     console.error('Translation failed:', data.error);
+                    alert(data.error || 'Translation failed');
                 }
             } catch (error) {
                 console.error('Translation error:', error);
+                alert('Translation failed. Please try again.');
             } finally {
-                loadingIndicator.classList.add('hidden');
+                hideLoading();
                 document.getElementById('autoTranslateStatus').classList.add('hidden');
             }
         }
 
         // Initial API usage check
-        fetch('/api-usage')  // You'll need to implement this endpoint
-            .then(response => response.json())
-            .then(data => {
-                apiUsage = data;
-                updateApiUsage(data.character_count);
-            })
-            .catch(error => console.error('Failed to fetch API usage:', error));
+        async function checkApiUsage() {
+            const apiKey = localStorage.getItem('deepl_api_key');
+            if (!apiKey) return;
+
+            try {
+                const response = await fetch('/api-usage', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    apiUsage = data;
+                    updateApiUsage(data.character_count);
+                }
+            } catch (error) {
+                console.error('Failed to fetch API usage:', error);
+            }
+        }
+
+        // Call initial API usage check
+        checkApiUsage();
+
+        // Schedule periodic API usage updates
+        setInterval(checkApiUsage, 60000); // Check every minute
 
         // API Key Modal handling
         const apiKeyModal = document.getElementById('apiKeyModal');
         const apiKeyInput = document.getElementById('apiKeyInput');
 
         function openApiKeyModal() {
-            // Load saved API key if exists
+            apiKeyModal.classList.remove('hidden');
+            setTimeout(() => {
+                const modalContent = apiKeyModal.querySelector('div');
+                modalContent.classList.add('animate-slide-in');
+            }, 10);
+            
             const savedApiKey = localStorage.getItem('deepl_api_key');
             if (savedApiKey) {
                 apiKeyInput.value = savedApiKey;
             }
-            apiKeyModal.classList.remove('hidden');
         }
 
         function closeApiKeyModal() {
-            apiKeyModal.classList.add('hidden');
+            const modalContent = apiKeyModal.querySelector('div');
+            modalContent.classList.add('opacity-0');
+            modalContent.style.transition = 'opacity 0.2s ease-out';
+            
+            setTimeout(() => {
+                apiKeyModal.classList.add('hidden');
+                modalContent.classList.remove('opacity-0');
+                modalContent.style.transition = '';
+            }, 200);
         }
 
         async function saveApiKey() {
@@ -591,160 +795,226 @@
             }
         }
 
-        // Update API calls to include API key from localStorage
-        async function translateText() {
-            const text = inputText.value.trim();
-            const targetLang = document.getElementById('targetLang').value;
-            const apiKey = localStorage.getItem('deepl_api_key');
-            
-            if (!text) {
-                document.getElementById('autoTranslateStatus').classList.add('hidden');
-                return;
-            }
-
-            try {
-                loadingIndicator.classList.remove('hidden');
-                const response = await fetch('/translate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        text: text,
-                        target_lang: targetLang,
-                        source_lang: null,
-                        api_key: apiKey
-                    })
-                });
-
-                const data = await response.json();
+        // Enhanced button click effect
+        document.querySelectorAll('.micro-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Remove existing ripple
+                this.classList.remove('ripple-effect');
                 
-                if (response.ok) {
-                    outputText.value = data.translated_text;
-                    // Update API usage if provided in response
-                    if (data.character_count !== undefined) {
-                        updateApiUsage(data.character_count);
-                    }
-                } else {
-                    console.error('Translation failed:', data.error);
-                }
-            } catch (error) {
-                console.error('Translation error:', error);
-            } finally {
+                // Create ripple effect
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                this.style.setProperty('--ripple-x', x + 'px');
+                this.style.setProperty('--ripple-y', y + 'px');
+                
+                this.classList.add('ripple-effect');
+            });
+        });
+
+        // Enhanced loading animation
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.add('loading-pulse', 'animate-fade-in');
+        }
+
+        function hideLoading() {
+            loadingIndicator.classList.remove('loading-pulse');
+            loadingIndicator.classList.add('opacity-0');
+            loadingIndicator.style.transition = 'opacity 0.2s ease-out';
+            
+            setTimeout(() => {
                 loadingIndicator.classList.add('hidden');
-                document.getElementById('autoTranslateStatus').classList.add('hidden');
+                loadingIndicator.classList.remove('opacity-0', 'animate-fade-in');
+                loadingIndicator.style.transition = '';
+            }, 200);
+        }
+
+        // Enhanced modal animations
+        function openApiKeyModal() {
+            apiKeyModal.classList.remove('hidden');
+            setTimeout(() => {
+                const modalContent = apiKeyModal.querySelector('div');
+                modalContent.classList.add('animate-slide-in');
+            }, 10);
+            
+            const savedApiKey = localStorage.getItem('deepl_api_key');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
             }
         }
 
-        // Update API usage check to include API key
-        async function checkApiUsage() {
-            const apiKey = localStorage.getItem('deepl_api_key');
-            try {
-                const response = await fetch('/api-usage', {
-                    headers: {
-                        'X-API-Key': apiKey
-                    }
-                });
-                const data = await response.json();
-                apiUsage = data;
-                updateApiUsage(data.character_count);
-            } catch (error) {
-                console.error('Failed to fetch API usage:', error);
-            }
+        function closeApiKeyModal() {
+            const modalContent = apiKeyModal.querySelector('div');
+            modalContent.classList.add('opacity-0');
+            modalContent.style.transition = 'opacity 0.2s ease-out';
+            
+            setTimeout(() => {
+                apiKeyModal.classList.add('hidden');
+                modalContent.classList.remove('opacity-0');
+                modalContent.style.transition = '';
+            }, 200);
         }
 
-        // Initial API usage check
-        checkApiUsage();
-
-        // Document translation handling
-        const documentModal = document.getElementById('documentModal');
-        const documentProgress = document.getElementById('documentProgress');
-        
+        // Enhanced document modal animations
         function openDocumentModal() {
             documentModal.classList.remove('hidden');
-            // Copy options from main language selector to document language selector
+            setTimeout(() => {
+                const modalContent = documentModal.querySelector('div');
+                modalContent.classList.add('animate-slide-in');
+            }, 10);
+            
             const documentTargetLang = document.getElementById('documentTargetLang');
             const mainTargetLang = document.getElementById('targetLang');
             documentTargetLang.innerHTML = mainTargetLang.innerHTML;
             documentTargetLang.value = mainTargetLang.value;
         }
-        
+
         function closeDocumentModal() {
-            documentModal.classList.add('hidden');
-            document.getElementById('documentInput').value = '';
-            documentProgress.classList.add('hidden');
-        }
-        
-        async function translateDocument() {
-            const file = document.getElementById('documentInput').files[0];
-            if (!file) {
-                alert('Please select a file to translate');
-                return;
-            }
+            const modalContent = documentModal.querySelector('div');
+            modalContent.classList.add('opacity-0');
+            modalContent.style.transition = 'opacity 0.2s ease-out';
             
-            const targetLang = document.getElementById('documentTargetLang').value;
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('target_lang', targetLang);
-            
-            // Add API key if exists
-            const apiKey = localStorage.getItem('deepl_api_key');
-            if (apiKey) {
-                formData.append('api_key', apiKey);
-            }
-            
-            try {
-                documentProgress.classList.remove('hidden');
-                
-                const response = await fetch('/upload-document', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Translation failed');
-                }
-                
-                // Get filename from response headers or use a default name
-                const contentDisposition = response.headers.get('content-disposition');
-                const filename = contentDisposition
-                    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-                    : 'translated_document';
-                
-                // Create blob from response and download
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                closeDocumentModal();
-            } catch (error) {
-                alert(error.message);
-            } finally {
+            setTimeout(() => {
+                documentModal.classList.add('hidden');
+                modalContent.classList.remove('opacity-0');
+                modalContent.style.transition = '';
+                document.getElementById('documentInput').value = '';
                 documentProgress.classList.add('hidden');
+            }, 200);
+        }
+
+        // Enhanced input interactions
+        inputText.addEventListener('focus', function() {
+            this.classList.add('textarea-transition');
+        });
+
+        outputText.addEventListener('focus', function() {
+            this.classList.add('textarea-transition');
+        });
+
+        // Enhanced copy animation
+        function copyTranslation() {
+            outputText.select();
+            document.execCommand('copy');
+            const button = document.querySelector('button[onclick="copyTranslation()"]');
+            
+            // Add success animation
+            button.classList.add('success-animation');
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.classList.add('bg-blue-50', 'dark:bg-gray-700', 'animate-pulse-scale');
+            
+            setTimeout(() => {
+                button.classList.remove('success-animation', 'bg-blue-50', 'dark:bg-gray-700', 'animate-pulse-scale');
+                button.innerHTML = '<i class="far fa-copy"></i> Copy';
+            }, 2000);
+        }
+
+        // Enhanced swap languages animation
+        function swapLanguages() {
+            const container = document.querySelector('.grid');
+            const button = document.querySelector('button[onclick="swapLanguages()"]');
+            
+            button.classList.add('animate-swap');
+            container.classList.add('swapping');
+            
+            if (inputText.value.trim() || outputText.value.trim()) {
+                const tempText = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = tempText;
+                updateCharacterCount(inputText.value.length);
+                
+                if (inputText.value.trim()) {
+                    translateText();
+                }
+            }
+            
+            setTimeout(() => {
+                button.classList.remove('animate-swap');
+                container.classList.remove('swapping');
+            }, 500);
+        }
+
+        // Enhanced modal animations
+        function openApiKeyModal() {
+            apiKeyModal.classList.remove('hidden');
+            setTimeout(() => {
+                const modalContent = apiKeyModal.querySelector('div');
+                modalContent.classList.add('animate-slide-in');
+            }, 10);
+            
+            const savedApiKey = localStorage.getItem('deepl_api_key');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
             }
         }
 
-        function toggleTooltip(event) {
-            event.stopPropagation(); // Prevent triggering xCopyTranslation
-            const tooltip = document.getElementById('xcopyTooltip');
-            tooltip.classList.toggle('hidden');
+        function closeApiKeyModal() {
+            const modalContent = apiKeyModal.querySelector('div');
+            modalContent.classList.add('opacity-0');
+            modalContent.style.transition = 'opacity 0.2s ease-out';
             
-            // Close tooltip when clicking outside
-            const closeTooltip = (e) => {
-                if (!tooltip.contains(e.target) && !e.target.classList.contains('fa-info-circle')) {
-                    tooltip.classList.add('hidden');
-                    document.removeEventListener('click', closeTooltip);
-                }
-            };
+            setTimeout(() => {
+                apiKeyModal.classList.add('hidden');
+                modalContent.classList.remove('opacity-0');
+                modalContent.style.transition = '';
+            }, 200);
+        }
+
+        // Enhanced document modal animations
+        function openDocumentModal() {
+            documentModal.classList.remove('hidden');
+            setTimeout(() => {
+                const modalContent = documentModal.querySelector('div');
+                modalContent.classList.add('animate-slide-in');
+            }, 10);
             
-            document.addEventListener('click', closeTooltip);
+            const documentTargetLang = document.getElementById('documentTargetLang');
+            const mainTargetLang = document.getElementById('targetLang');
+            documentTargetLang.innerHTML = mainTargetLang.innerHTML;
+            documentTargetLang.value = mainTargetLang.value;
+        }
+
+        function closeDocumentModal() {
+            const modalContent = documentModal.querySelector('div');
+            modalContent.classList.add('opacity-0');
+            modalContent.style.transition = 'opacity 0.2s ease-out';
+            
+            setTimeout(() => {
+                documentModal.classList.add('hidden');
+                modalContent.classList.remove('opacity-0');
+                modalContent.style.transition = '';
+                document.getElementById('documentInput').value = '';
+                documentProgress.classList.add('hidden');
+            }, 200);
+        }
+
+        // Enhanced input interactions
+        inputText.addEventListener('focus', function() {
+            this.classList.add('textarea-transition');
+        });
+
+        outputText.addEventListener('focus', function() {
+            this.classList.add('textarea-transition');
+        });
+
+        // Enhanced loading animation
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+            loadingIndicator.classList.add('loading-pulse', 'animate-fade-in');
+        }
+
+        function hideLoading() {
+            loadingIndicator.classList.remove('loading-pulse');
+            loadingIndicator.classList.add('opacity-0');
+            loadingIndicator.style.transition = 'opacity 0.2s ease-out';
+            
+            setTimeout(() => {
+                loadingIndicator.classList.add('hidden');
+                loadingIndicator.classList.remove('opacity-0', 'animate-fade-in');
+                loadingIndicator.style.transition = '';
+            }, 200);
         }
     </script>
 </body>

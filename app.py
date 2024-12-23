@@ -50,23 +50,19 @@ def get_api_usage():
     try:
         # Get API key from header or use default
         api_key = request.headers.get('X-API-Key')
+        if not api_key:
+            return jsonify({'error': 'API key is required'}), 400
+            
         translator = get_translator(api_key)
         
         usage = translator.get_usage()
-        print("API Usage:", {
-            'character_count': usage.character.count,
-            'character_limit': usage.character.limit
-        })
         return jsonify({
             'character_count': usage.character.count,
             'character_limit': usage.character.limit
         })
     except Exception as e:
         print(f"Error getting API usage: {e}")
-        return jsonify({
-            'character_count': 0,
-            'character_limit': 500000
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/translate', methods=['POST'])
 def translate():
