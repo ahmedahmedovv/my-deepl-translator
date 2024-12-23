@@ -1,168 +1,94 @@
-from flask import Flask, render_template, request, jsonify, send_file
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify
 import deepl
 import os
-from werkzeug.utils import secure_filename
-import io
-import logging
-from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+DEFAULT_API_KEY = os.getenv('DEEPL_API_KEY')
 
-# Initialize DeepL translator
-translator = deepl.Translator(os.getenv('DEEPL_API_KEY'))
+def get_translator(api_key=None):
+    """Get a DeepL translator instance with the given API key or default key."""
+    return deepl.Translator(api_key or DEFAULT_API_KEY)
 
-# Add after existing configuration
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'pptx', 'xlsx', 'html'}
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# Add this after initializing the translator
-def get_api_usage():
-    try:
-        usage = translator.get_usage()
-        character_count = usage.character.count
-        character_limit = usage.character.limit
-        percent_used = (character_count / character_limit) * 100 if character_limit else 0
-        return {
-            'count': character_count,
-            'limit': character_limit,
-            'percent': round(percent_used, 1)
-        }
-    except:
-        return {'count': 0, 'limit': 0, 'percent': 0}
-
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/test-api-key', methods=['POST'])
+def test_api_key():
+    try:
+        data = request.get_json()
+        api_key = data.get('api_key')
+        
+        if not api_key:
+            return jsonify({'error': 'API key is required'}), 400
+            
+        # Test the API key by getting usage
+        translator = deepl.Translator(api_key)
+        translator.get_usage()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api-usage')
+def get_api_usage():
+    try:
+        # Get API key from header or use default
+        api_key = request.headers.get('X-API-Key')
+        translator = get_translator(api_key)
+        
+        usage = translator.get_usage()
+        print("API Usage:", {
+            'character_count': usage.character.count,
+            'character_limit': usage.character.limit
+        })
+        return jsonify({
+            'character_count': usage.character.count,
+            'character_limit': usage.character.limit
+        })
+    except Exception as e:
+        print(f"Error getting API usage: {e}")
+        return jsonify({
+            'character_count': 0,
+            'character_limit': 500000
+        }), 500
 
 @app.route('/translate', methods=['POST'])
 def translate():
     try:
-        data = request.json
-        text = data.get('text', '')
-        target_lang = data.get('target_lang', 'EN-US')
+        data = request.get_json()
+        text = data.get('text')
+        target_lang = data.get('target_lang')
+        source_lang = data.get('source_lang')
+        api_key = data.get('api_key')
         
-        result = translator.translate_text(text, target_lang=target_lang)
+        if not text or not target_lang:
+            return jsonify({'error': 'Missing required parameters'}), 400
         
-        detected_lang = result.detected_source_lang
+        # Get translator with custom or default API key
+        translator = get_translator(api_key)
         
+        # Translate text
+        if source_lang:
+            result = translator.translate_text(text, target_lang=target_lang, source_lang=source_lang)
+        else:
+            result = translator.translate_text(text, target_lang=target_lang)
+
+        # Get updated usage
+        usage = translator.get_usage()
+            
         return jsonify({
-            'success': True,
-            'translated_text': result.text,
-            'detected_language': detected_lang
+            'translated_text': str(result),
+            'detected_source_lang': result.detected_source_lang,
+            'character_count': usage.character.count,
+            'character_limit': usage.character.limit
         })
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/translate-document', methods=['POST'])
-def translate_document():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'error': 'No file provided'}), 400
-            
-        file = request.files['file']
-        target_lang = request.form.get('target_lang', 'EN-US')
-        
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No file selected'}), 400
-            
-        if not allowed_file(file.filename):
-            return jsonify({'success': False, 'error': f'File type not supported. Allowed types: {ALLOWED_EXTENSIONS}'}), 400
-            
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        output_path = os.path.join(app.config['UPLOAD_FOLDER'], f"translated_{filename}")
-        
-        print(f"Saving file to: {filepath}")
-        file.save(filepath)
-        
-        try:
-            # First, detect the source language using the text API
-            # Read first few KB of the file for language detection
-            with open(filepath, 'r', errors='ignore') as f:
-                sample_text = f.read(1000)  # Read first 1000 characters
-            
-            # Detect source language
-            source_lang_result = translator.translate_text(
-                sample_text,
-                target_lang='EN-US'  # Temporary target for detection
-            )
-            detected_lang = source_lang_result.detected_source_lang
-            
-            # Check if source and target languages are the same
-            if detected_lang.upper() == target_lang.split('-')[0]:
-                raise Exception(f"Source language ({detected_lang}) is the same as target language ({target_lang}). No translation needed.")
-            
-            print(f"Detected source language: {detected_lang}")
-            print(f"Target language: {target_lang}")
-            
-            # Proceed with document translation
-            translator.translate_document_from_filepath(
-                filepath,
-                output_path,
-                target_lang=target_lang,
-                source_lang=detected_lang,  # Specify detected source language
-                formality='default'
-            )
-            
-            print(f"Reading translated file from: {output_path}")
-            with open(output_path, 'rb') as f:
-                translated_content = f.read()
-                
-            return send_file(
-                io.BytesIO(translated_content),
-                as_attachment=True,
-                download_name=f"translated_{filename}"
-            )
-                
-        finally:
-            # Cleanup files
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-                    print(f"Cleaned up original file: {filepath}")
-                if os.path.exists(output_path):
-                    os.remove(output_path)
-                    print(f"Cleaned up translated file: {output_path}")
-            except Exception as e:
-                print(f"Error during cleanup: {str(e)}")
-        
-    except Exception as e:
-        error_message = str(e)
-        print(f"Translation error: {error_message}")
-        return jsonify({
-            'success': False,
-            'error': error_message
-        }), 400
-
-@app.route('/api-usage', methods=['GET'])
-def api_usage():
-    return jsonify(get_api_usage())
+        print(f"Translation error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Configure logging
-    if not app.debug:
-        file_handler = RotatingFileHandler('translator.log', maxBytes=10240, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Translator startup')
-
-    # Use environment variable for port if available (for production)
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)

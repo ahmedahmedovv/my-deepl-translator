@@ -3,147 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepL Translator</title>
-    <link href="https://unpkg.com/@primer/css@^20.2.4/dist/primer.css" rel="stylesheet" />
-    <link href="static/css/styles.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <title>Personal DeepL Translator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
 </head>
-<body>
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-spinner"></div>
-        <div id="loadingStatus" class="loading-status">Processing...</div>
-    </div>
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
+    <!-- Minimal Header -->
+    <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto h-14 px-6 relative flex items-center">
+            <!-- Left side -->
+            <div class="absolute left-6">
+                <img src="https://www.deepl.com/img/logo/deepl-logo-blue.svg" alt="DeepL Logo" class="h-6 dark:invert">
+            </div>
+            
+            <!-- Center -->
+            <div class="flex-1 flex justify-center">
+                <button onclick="swapLanguages()" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all transform hover:scale-110 duration-200"
+                    title="Swap languages">
+                    <i class="fas fa-exchange-alt text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-lg"></i>
+                </button>
+            </div>
 
-    <div class="header-container">
-        <div class="container">
-            <div class="d-flex flex-items-center flex-justify-between">
-                <div class="d-flex flex-items-center">
-                    <h1 class="header-title">My DeepL Translator</h1>
-                    <div class="api-usage-container ml-3">
-                        <div class="api-usage-bar">
-                            <div class="api-usage-progress" id="apiUsageProgress"></div>
+            <!-- Right side -->
+            <div class="absolute right-6 flex items-center gap-4">
+                <!-- API Usage Bar -->
+                <div class="flex items-center gap-2" title="API Usage">
+                    <div class="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div id="apiUsageBar" class="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <span id="apiUsageText" class="text-xs text-gray-600 dark:text-gray-400">0%</span>
+                </div>
+
+                <button onclick="openApiKeyModal()" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+                    title="Configure API Key">
+                    <i class="fas fa-key text-lg"></i>
+                </button>
+
+                <button onclick="toggleTheme()" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 relative"
+                    title="Toggle theme">
+                    <i class="fas fa-sun text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-0 dark:opacity-100"></i>
+                    <i class="fas fa-moon text-lg absolute inset-0 flex items-center justify-center transition-opacity opacity-100 dark:opacity-0"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 pt-16 pb-4 max-w-[1920px] h-[calc(100vh-4rem)]">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg h-full transition-colors duration-200">
+            <div class="grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
+                <!-- Input Section -->
+                <div class="relative h-full flex flex-col">
+                    <div class="flex justify-between items-center h-[52px] px-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Input Text</label>
                         </div>
-                        <div class="api-usage-tooltip">
-                            <span id="apiUsageText">Loading usage...</span>
+                        <div class="flex items-center gap-2">
+                            <span id="autoTranslateStatus" class="text-xs text-gray-500 dark:text-gray-400 hidden">
+                                Auto-translating...
+                            </span>
+                            <span id="inputCount" class="text-sm text-gray-500 dark:text-gray-400">0/5000</span>
+                        </div>
+                    </div>
+                    <div class="relative group flex-grow">
+                        <textarea id="inputText" maxlength="5000" 
+                            class="w-full h-full p-4 border-0 focus:ring-0 bg-transparent dark:text-white resize-none text-lg" 
+                            placeholder="Enter text to translate..."></textarea>
+                        <div class="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="clearInput()" 
+                                class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Clear text">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button onclick="pasteFromClipboard()" 
+                                class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Paste from clipboard">
+                                <i class="fas fa-paste"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="d-flex flex-items-center">
-                    <span class="status-badge mr-2" id="detectedLang">
-                        Detected: -
-                    </span>
-                    <span class="status-badge mr-2" id="statusText">
-                        Ready
-                    </span>
-                    <select class="form-select lang-select mr-2" id="targetLang">
-                        <option value="BG">Bulgarian</option>
-                        <option value="CS">Czech</option>
-                        <option value="DA">Danish</option>
-                        <option value="DE">German</option>
-                        <option value="EL">Greek</option>
-                        <option value="EN-US">English (US)</option>
-                        <option value="EN-GB">English (UK)</option>
-                        <option value="ES">Spanish</option>
-                        <option value="ET">Estonian</option>
-                        <option value="FI">Finnish</option>
-                        <option value="FR">French</option>
-                        <option value="HU">Hungarian</option>
-                        <option value="ID">Indonesian</option>
-                        <option value="IT">Italian</option>
-                        <option value="JA">Japanese</option>
-                        <option value="KO">Korean</option>
-                        <option value="LT">Lithuanian</option>
-                        <option value="LV">Latvian</option>
-                        <option value="NL">Dutch</option>
-                        <option value="PL">Polish</option>
-                        <option value="PT-PT">Portuguese</option>
-                        <option value="PT-BR">Portuguese (Brazil)</option>
-                        <option value="RO">Romanian</option>
-                        <option value="RU">Russian</option>
-                        <option value="SK">Slovak</option>
-                        <option value="SL">Slovenian</option>
-                        <option value="SV">Swedish</option>
-                        <option value="TR">Turkish</option>
-                        <option value="UK">Ukrainian</option>
-                        <option value="ZH">Chinese</option>
-                    </select>
-                    <div class="translation-type-toggle">
-                        <button class="btn btn-sm selected" id="textModeBtn">
-                            Text
-                        </button>
-                        <button class="btn btn-sm" id="documentModeBtn">
-                            Document
-                        </button>
+                
+                <!-- Output Section -->
+                <div class="relative h-full flex flex-col">
+                    <div class="flex justify-between items-center h-[52px] px-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Translated Text</label>
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-600"></div>
+                            <select id="targetLang" onchange="handleLanguageChange()" 
+                                class="text-sm border-0 bg-transparent focus:ring-0 text-gray-600 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <option value="BG">Bulgarian</option>
+                                <option value="CS">Czech</option>
+                                <option value="DA">Danish</option>
+                                <option value="DE">German</option>
+                                <option value="EL">Greek</option>
+                                <option value="EN-GB">English (British)</option>
+                                <option value="EN-US" selected>English (American)</option>
+                                <option value="ES">Spanish</option>
+                                <option value="ET">Estonian</option>
+                                <option value="FI">Finnish</option>
+                                <option value="FR">French</option>
+                                <option value="HU">Hungarian</option>
+                                <option value="ID">Indonesian</option>
+                                <option value="IT">Italian</option>
+                                <option value="LT">Lithuanian</option>
+                                <option value="LV">Latvian</option>
+                                <option value="NL">Dutch</option>
+                                <option value="PL">Polish</option>
+                                <option value="PT-BR">Portuguese (Brazilian)</option>
+                                <option value="PT-PT">Portuguese (European)</option>
+                                <option value="RO">Romanian</option>
+                                <option value="SK">Slovak</option>
+                                <option value="SL">Slovenian</option>
+                                <option value="SV">Swedish</option>
+                                <option value="TR">Turkish</option>
+                                <option value="JA">Japanese</option>
+                                <option value="ZH">Chinese (Simplified)</option>
+                                <option value="KO">Korean</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyTranslation()" 
+                                class="inline-flex items-center gap-1 px-2 h-8 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Copy translation">
+                                <i class="far fa-copy"></i>
+                                Copy
+                            </button>
+                            <button onclick="xCopyTranslation()" 
+                                class="inline-flex items-center gap-1 px-2 h-8 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Copy cleaned text (removes extra spaces, line breaks, and whitespace)">
+                                <i class="fas fa-broom"></i>
+                                XCopy
+                            </button>
+                        </div>
                     </div>
+                    <div class="relative group flex-grow">
+                        <textarea id="outputText"
+                            class="w-full h-full p-4 border-0 focus:ring-0 bg-transparent dark:text-white resize-none text-lg" 
+                            readonly></textarea>
+                        <div id="loadingIndicator" class="hidden absolute inset-0 bg-gray-50 dark:bg-gray-700 bg-opacity-50 flex items-center justify-center backdrop-blur-sm">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                                <span class="text-blue-600 dark:text-blue-400">Translating...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add API Key Modal -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Configure DeepL API Key</h2>
+                <button onclick="closeApiKeyModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
+                    <input type="text" id="apiKeyInput" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 
+                        text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                        placeholder="Enter your DeepL API key">
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    You can find your API key in your 
+                    <a href="https://www.deepl.com/account/summary" target="_blank" 
+                        class="text-blue-600 dark:text-blue-400 hover:underline">DeepL account</a>.
+                </p>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="closeApiKeyModal()" 
+                        class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="saveApiKey()" 
+                        class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Save
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="container">
-            <div class="controls-container">
-                <div id="documentUploadPanel" class="document-panel" style="display: none;">
-                    <div class="upload-area" id="dropZone">
-                        <form id="uploadForm" enctype="multipart/form-data">
-                            <input type="file" id="fileInput" style="display: none;" 
-                                   accept=".txt,.pdf,.docx,.pptx,.xlsx,.html">
-                            <div class="upload-content">
-                                <div class="upload-icon">
-                                    <svg height="24" viewBox="0 0 24 24" width="24">
-                                        <path d="M12 2l4 4h-3v9h-2V6H8l4-4zm7 18H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
-                                    </svg>
-                                </div>
-                                <p class="upload-text">Drag & drop a file or click to upload</p>
-                                <div class="upload-info">
-                                    <small>Supported formats: TXT, PDF, DOCX, PPTX, XLSX, HTML</small>
-                                    <small>Maximum file size: 10MB</small>
-                                </div>
-                                <div id="uploadProgress" class="upload-progress" style="display: none;">
-                                    <div class="progress">
-                                        <div class="progress-bar" style="width: 0%"></div>
-                                    </div>
-                                    <div id="progressStatus" class="progress-status">0%</div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                <div class="panels-container">
-                    <div class="translation-panel">
-                        <div class="panel-header">
-                            <label class="panel-label">Source Text</label>
-                            <div class="panel-actions">
-                            </div>
-                        </div>
-                        <textarea id="sourceText" 
-                                class="form-control translation-area" 
-                                placeholder="Enter text to translate..."></textarea>
-                    </div>
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const inputCount = document.getElementById('inputCount');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
-                    <div class="divider"></div>
+        // Theme handling
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
 
-                    <div class="translation-panel">
-                        <div class="panel-header">
-                            <label class="panel-label">Translation</label>
-                            <div class="panel-actions">
-                                <button class="btn btn-sm copy-button mr-2" id="xcopyButton">
-                                    XCopy
-                                </button>
-                                <button class="btn btn-sm copy-button" id="copyButton">
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                        <textarea id="translatedText" 
-                                class="form-control translation-area" 
-                                readonly></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-<script src="static/js/translator.js"></script>
+        // Set initial theme
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        let translateTimeout;
+        const TRANSLATE_DELAY = 500; // ms delay before translating
+
+        // Update input handler to include auto-translation
+        inputText.addEventListener('input', function() {
+            // Update character count
+            inputCount.textContent = `${this.value.length}/5000`;
+            if (this.value.length > 0) {
+                this.classList.add('text-gray-900', 'dark:text-white');
+            } else {
+                this.classList.remove('text-gray-900', 'dark:text-white');
+                outputText.value = '';
+            }
+
+            // Clear previous timeout
+            clearTimeout(translateTimeout);
+            
+            if (this.value.trim()) {
+                // Show auto-translate status
+                document.getElementById('autoTranslateStatus').classList.remove('hidden');
+                
+                // Set new timeout for translation
+                translateTimeout = setTimeout(() => {
+                    translateText();
+                }, TRANSLATE_DELAY);
+            } else {
+                document.getElementById('autoTranslateStatus').classList.add('hidden');
+            }
+        });
+
+        // Add language change handler
+        function handleLanguageChange() {
+            if (inputText.value.trim()) {
+                clearTimeout(translateTimeout);
+                translateTimeout = setTimeout(() => {
+                    translateText();
+                }, TRANSLATE_DELAY);
+            }
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                inputText.value = text;
+                inputCount.textContent = `${text.length}/5000`;
+            } catch (err) {
+                alert('Failed to read clipboard');
+            }
+        }
+
+        function clearInput() {
+            inputText.value = '';
+            outputText.value = '';
+            inputCount.textContent = '0/5000';
+        }
+
+        function copyTranslation() {
+            outputText.select();
+            document.execCommand('copy');
+            const button = document.querySelector('button[onclick="copyTranslation()"]');
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.classList.add('bg-blue-50', 'dark:bg-gray-700');
+            setTimeout(() => {
+                button.innerHTML = '<i class="far fa-copy"></i> Copy';
+                button.classList.remove('bg-blue-50', 'dark:bg-gray-700');
+            }, 2000);
+        }
+
+        function xCopyTranslation() {
+            const text = outputText.value;
+            // Clean the text:
+            // 1. Replace multiple spaces with single space
+            // 2. Replace all types of line breaks with space
+            // 3. Trim leading/trailing whitespace
+            const cleanedText = text
+                .replace(/\s+/g, ' ')      // Replace multiple spaces/tabs/line breaks with single space
+                .trim();                   // Remove leading/trailing whitespace
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(cleanedText).then(() => {
+                const button = document.querySelector('button[onclick="xCopyTranslation()"]');
+                button.innerHTML = '<i class="fas fa-check"></i> Cleaned!';
+                button.classList.add('bg-blue-50', 'dark:bg-gray-700');
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-broom"></i> XCopy';
+                    button.classList.remove('bg-blue-50', 'dark:bg-gray-700');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+            });
+        }
+
+        function swapLanguages() {
+            const targetLang = document.getElementById('targetLang');
+            // Swap text content if there's any text
+            if (inputText.value.trim() || outputText.value.trim()) {
+                const tempText = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = tempText;
+                inputCount.textContent = `${inputText.value.length}/5000`;
+                
+                // Retranslate if there's text in the input
+                if (inputText.value.trim()) {
+                    translateText();
+                }
+            }
+        }
+
+        // Update keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        swapLanguages();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        clearInput();
+                        break;
+                    case 'c':
+                        if (document.activeElement !== outputText) {
+                            e.preventDefault();
+                            copyTranslation();
+                        }
+                        break;
+                    case 'x':  // Add shortcut for XCopy
+                        if (document.activeElement !== outputText) {
+                            e.preventDefault();
+                            xCopyTranslation();
+                        }
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        toggleTheme();
+                        break;
+                }
+            } else if (e.key === 'Escape') {
+                shortcutsModal.classList.add('hidden');
+            }
+        });
+
+        // Add API usage tracking
+        let apiUsage = {
+            character_count: 0,
+            character_limit: 500000  // Default monthly limit, update this based on your plan
+        };
+
+        // Function to update API usage display
+        function updateApiUsage(characterCount) {
+            apiUsage.character_count = characterCount;
+            const usagePercent = Math.min((apiUsage.character_count / apiUsage.character_limit) * 100, 100);
+            
+            const usageBar = document.getElementById('apiUsageBar');
+            const usageText = document.getElementById('apiUsageText');
+            
+            usageBar.style.width = `${usagePercent}%`;
+            usageText.textContent = `${Math.round(usagePercent)}%`;
+
+            // Update color based on usage
+            if (usagePercent > 90) {
+                usageBar.classList.remove('bg-blue-500', 'dark:bg-blue-400');
+                usageBar.classList.add('bg-red-500', 'dark:bg-red-400');
+            } else if (usagePercent > 75) {
+                usageBar.classList.remove('bg-blue-500', 'dark:bg-blue-400');
+                usageBar.classList.add('bg-yellow-500', 'dark:bg-yellow-400');
+            } else {
+                usageBar.classList.remove('bg-red-500', 'dark:bg-red-400', 'bg-yellow-500', 'dark:bg-yellow-400');
+                usageBar.classList.add('bg-blue-500', 'dark:bg-blue-400');
+            }
+        }
+
+        // Update translateText function to track API usage
+        async function translateText() {
+            const text = inputText.value.trim();
+            const targetLang = document.getElementById('targetLang').value;
+            const apiKey = localStorage.getItem('deepl_api_key');
+            
+            if (!text) {
+                document.getElementById('autoTranslateStatus').classList.add('hidden');
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        target_lang: targetLang,
+                        source_lang: null,
+                        api_key: apiKey
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    outputText.value = data.translated_text;
+                    // Update API usage if provided in response
+                    if (data.character_count !== undefined) {
+                        updateApiUsage(data.character_count);
+                    }
+                } else {
+                    console.error('Translation failed:', data.error);
+                }
+            } catch (error) {
+                console.error('Translation error:', error);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                document.getElementById('autoTranslateStatus').classList.add('hidden');
+            }
+        }
+
+        // Initial API usage check
+        fetch('/api-usage')  // You'll need to implement this endpoint
+            .then(response => response.json())
+            .then(data => {
+                apiUsage = data;
+                updateApiUsage(data.character_count);
+            })
+            .catch(error => console.error('Failed to fetch API usage:', error));
+
+        // API Key Modal handling
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+        function openApiKeyModal() {
+            // Load saved API key if exists
+            const savedApiKey = localStorage.getItem('deepl_api_key');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+            apiKeyModal.classList.remove('hidden');
+        }
+
+        function closeApiKeyModal() {
+            apiKeyModal.classList.add('hidden');
+        }
+
+        async function saveApiKey() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter an API key');
+                return;
+            }
+
+            try {
+                // Test the API key
+                const response = await fetch('/test-api-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('deepl_api_key', apiKey);
+                    closeApiKeyModal();
+                    location.reload(); // Reload to use new API key
+                } else {
+                    alert('Invalid API key: ' + data.error);
+                }
+            } catch (error) {
+                alert('Failed to validate API key');
+                console.error('API key validation error:', error);
+            }
+        }
+
+        // Update API calls to include API key from localStorage
+        async function translateText() {
+            const text = inputText.value.trim();
+            const targetLang = document.getElementById('targetLang').value;
+            const apiKey = localStorage.getItem('deepl_api_key');
+            
+            if (!text) {
+                document.getElementById('autoTranslateStatus').classList.add('hidden');
+                return;
+            }
+
+            try {
+                loadingIndicator.classList.remove('hidden');
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        target_lang: targetLang,
+                        source_lang: null,
+                        api_key: apiKey
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    outputText.value = data.translated_text;
+                    // Update API usage if provided in response
+                    if (data.character_count !== undefined) {
+                        updateApiUsage(data.character_count);
+                    }
+                } else {
+                    console.error('Translation failed:', data.error);
+                }
+            } catch (error) {
+                console.error('Translation error:', error);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                document.getElementById('autoTranslateStatus').classList.add('hidden');
+            }
+        }
+
+        // Update API usage check to include API key
+        async function checkApiUsage() {
+            const apiKey = localStorage.getItem('deepl_api_key');
+            try {
+                const response = await fetch('/api-usage', {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                const data = await response.json();
+                apiUsage = data;
+                updateApiUsage(data.character_count);
+            } catch (error) {
+                console.error('Failed to fetch API usage:', error);
+            }
+        }
+
+        // Initial API usage check
+        checkApiUsage();
+    </script>
 </body>
 </html>
-
