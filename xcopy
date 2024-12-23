@@ -1,0 +1,100 @@
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "xcopy",
+    title: "XCopy",
+    contexts: ["selection"]
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "xcopy") {
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: text => {
+        const el = document.createElement('textarea');
+        el.value = text.replace(/\s+/g, ' ').trim();
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      },
+      args: [info.selectionText]
+    });
+  }
+});
+
+// Add this new listener for the keyboard shortcut
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === "xcopy-shortcut") {
+    console.log('Shortcut triggered:', command);
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        console.log('Script executing in tab');
+        
+        // Get the active element
+        const activeElement = document.activeElement;
+        console.log('Active element type:', activeElement.tagName);
+        console.log('Active element:', activeElement);
+        
+        // Function to handle copying
+        const copyText = (text) => {
+          const el = document.createElement('textarea');
+          el.style.position = 'fixed';
+          el.style.top = '0';
+          el.style.left = '-9999px';
+          el.style.opacity = '0';
+          el.value = text.replace(/\s+/g, ' ').trim();
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          console.log('Text copied:', el.value);
+        };
+
+        // Check for Discord's editor
+        const discordEditor = document.querySelector('d-textarea div[role="textbox"]');
+        console.log('Discord editor found:', !!discordEditor);
+
+        if (discordEditor) {
+          console.log('Processing Discord editor');
+          // Get text from Discord's editor
+          const text = discordEditor.textContent || discordEditor.innerText;
+          console.log('Discord text:', text);
+          copyText(text);
+          
+          // Try to select the text in Discord's editor
+          const range = document.createRange();
+          range.selectNodeContents(discordEditor);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        // Standard input/textarea handling
+        else if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+          console.log('Standard input/textarea detected');
+          try {
+            activeElement.select();
+            copyText(activeElement.value);
+          } catch (error) {
+            console.error('Error copying from input:', error);
+          }
+        } else {
+          console.log('Checking for selected text');
+          const selection = window.getSelection();
+          const text = selection.toString();
+          if (text) {
+            console.log('Selected text found');
+            copyText(text);
+          }
+        }
+      }
+    }).then(() => {
+      console.log('Script execution completed');
+    }).catch((err) => {
+      console.error('Script execution failed:', err);
+    });
+  }
+});
