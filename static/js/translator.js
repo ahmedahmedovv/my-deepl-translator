@@ -259,16 +259,23 @@ async function handleFile(file) {
     formData.append('target_lang', document.getElementById('targetLang').value);
 
     try {
-        showLoading('Uploading file...');
-        statusText.textContent = 'Uploading...';
+        showLoading('Detecting language...');
+        statusText.textContent = 'Detecting language...';
 
         const response = await fetch('/translate-document', {
             method: 'POST',
             body: formData
         });
 
-        if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
+            if (errorData.error && errorData.error.includes('same as target language')) {
+                hideLoading();
+                showToast('Document is already in the target language', 'info');
+                statusText.textContent = 'No translation needed';
+                return;
+            }
             throw new Error(errorData.error || 'Translation failed');
         }
 
@@ -303,3 +310,85 @@ async function handleFile(file) {
         progressBar.style.display = 'none';
     }
 }
+
+// Add this function to create and show icons with tooltips
+function createIconWithTooltip(iconType, tooltipText) {
+    const icons = {
+        source: `
+            <span class="material-symbols-rounded">
+                edit_document
+            </span>
+        `,
+        translation: `
+            <span class="material-symbols-rounded">
+                translate
+            </span>
+        `,
+        document: `
+            <span class="material-symbols-rounded">
+                description
+            </span>
+        `,
+        text: `
+            <span class="material-symbols-rounded">
+                text_fields
+            </span>
+        `,
+        copy: `
+            <span class="material-symbols-rounded">
+                content_copy
+            </span>
+        `,
+        xcopy: `
+            <span class="material-symbols-rounded">
+                content_cut
+            </span>
+        `
+    };
+
+    return `
+        <div class="icon-tooltip-container">
+            ${icons[iconType]}
+            <span class="tooltip">${tooltipText}</span>
+        </div>
+    `;
+}
+
+// Update the panel headers with icons
+document.addEventListener('DOMContentLoaded', () => {
+    // Source panel icon
+    const sourcePanelLabel = document.querySelector('.panel-header .panel-label');
+    sourcePanelLabel.innerHTML = `
+        ${createIconWithTooltip('source', 'Enter your text here')}
+        <span class="ml-2">Source Text</span>
+    `;
+
+    // Translation panel icon
+    const translationPanelLabel = document.querySelectorAll('.panel-header .panel-label')[1];
+    translationPanelLabel.innerHTML = `
+        ${createIconWithTooltip('translation', 'Translated text appears here')}
+        <span class="ml-2">Translation</span>
+    `;
+
+    // Update copy buttons
+    document.getElementById('copyButton').innerHTML = `
+        ${createIconWithTooltip('copy', 'Copy translation')}
+        Copy
+    `;
+
+    document.getElementById('xcopyButton').innerHTML = `
+        ${createIconWithTooltip('xcopy', 'Copy and clean translation')}
+        XCopy
+    `;
+
+    // Update mode toggle buttons
+    document.getElementById('textModeBtn').innerHTML = `
+        ${createIconWithTooltip('text', 'Switch to text mode')}
+        Text
+    `;
+
+    document.getElementById('documentModeBtn').innerHTML = `
+        ${createIconWithTooltip('document', 'Switch to document mode')}
+        Document
+    `;
+});

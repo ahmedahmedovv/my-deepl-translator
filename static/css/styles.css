@@ -75,12 +75,14 @@ body {
     background-color: var(--color-canvas-subtle);
     font-size: 0.8rem;
     color: var(--color-fg-muted);
+    margin-right: 8px;
 }
 .lang-select {
     width: 130px;
     font-size: 0.8rem;
     padding: 2px 6px;
     height: 28px;
+    margin-right: 8px;
 }
 .controls-container {
     background-color: var(--color-canvas-default);
@@ -138,6 +140,7 @@ body {
 .translation-type-toggle {
     display: flex;
     gap: 8px;
+    margin-left: 8px;
 }
 
 .translation-type-toggle .btn.selected {
@@ -304,4 +307,130 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Add these styles */
+.icon-tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.icon {
+    fill: var(--color-fg-muted);
+    margin-right: 4px;
+}
+
+.tooltip {
+    visibility: hidden;
+    position: absolute;
+    background: var(--color-canvas-overlay);
+    color: var(--color-fg-default);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 4px;
+    box-shadow: var(--color-shadow-medium);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.icon-tooltip-container:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Update existing styles */
+.panel-header {
+    /* ... existing styles ... */
+    gap: 8px;
+}
+
+.panel-label {
+    display: flex;
+    align-items: center;
+}
+
+/* Add styles for mode toggle icons */
+.translation-type-toggle .btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.translation-type-toggle .btn svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+/* Update icon styles */
+.material-symbols-rounded {
+    font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+    font-size: 20px;
+    color: var(--color-fg-muted);
+    vertical-align: middle;
+}
+
+.icon-tooltip-container {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+
+/* Update button styles */
+.btn .material-symbols-rounded {
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.translation-type-toggle .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.translation-type-toggle .btn.selected .material-symbols-rounded {
+    color: var(--color-fg-default);
+}
+
+.copy-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Enhance tooltip styles */
+.tooltip {
+    visibility: hidden;
+    position: absolute;
+    background: var(--color-canvas-overlay);
+    color: var(--color-fg-default);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.icon-tooltip-container:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
 }

@@ -52,10 +52,6 @@ def translate():
 @app.route('/translate-document', methods=['POST'])
 def translate_document():
     try:
-        # Debug: Print received files
-        print("Received files:", request.files)
-        print("Received form data:", request.form)
-
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': 'No file provided'}), 400
             
@@ -76,38 +72,43 @@ def translate_document():
         file.save(filepath)
         
         try:
-            print(f"File size: {os.path.getsize(filepath)} bytes")
-            print(f"Attempting to translate file: {filepath}")
+            # First, detect the source language using the text API
+            # Read first few KB of the file for language detection
+            with open(filepath, 'r', errors='ignore') as f:
+                sample_text = f.read(1000)  # Read first 1000 characters
             
-            # Create input and output paths
-            input_document = filepath
-            output_document = output_path
+            # Detect source language
+            source_lang_result = translator.translate_text(
+                sample_text,
+                target_lang='EN-US'  # Temporary target for detection
+            )
+            detected_lang = source_lang_result.detected_source_lang
             
-            try:
-                # Translate the document
-                translator.translate_document_from_filepath(
-                    input_document,
-                    output_document,
-                    target_lang=target_lang,
-                    formality='default'
-                )
+            # Check if source and target languages are the same
+            if detected_lang.upper() == target_lang.split('-')[0]:
+                raise Exception(f"Source language ({detected_lang}) is the same as target language ({target_lang}). No translation needed.")
+            
+            print(f"Detected source language: {detected_lang}")
+            print(f"Target language: {target_lang}")
+            
+            # Proceed with document translation
+            translator.translate_document_from_filepath(
+                filepath,
+                output_path,
+                target_lang=target_lang,
+                source_lang=detected_lang,  # Specify detected source language
+                formality='default'
+            )
+            
+            print(f"Reading translated file from: {output_path}")
+            with open(output_path, 'rb') as f:
+                translated_content = f.read()
                 
-                print(f"Reading translated file from: {output_document}")
-                with open(output_document, 'rb') as f:
-                    translated_content = f.read()
-                    
-                return send_file(
-                    io.BytesIO(translated_content),
-                    as_attachment=True,
-                    download_name=f"translated_{filename}"
-                )
-                
-            except deepl.DocumentTranslationException as e:
-                print(f"DeepL API error: {str(e)}")
-                raise
-            except Exception as e:
-                print(f"Unexpected error during translation: {str(e)}")
-                raise
+            return send_file(
+                io.BytesIO(translated_content),
+                as_attachment=True,
+                download_name=f"translated_{filename}"
+            )
                 
         finally:
             # Cleanup files
@@ -122,8 +123,8 @@ def translate_document():
                 print(f"Error during cleanup: {str(e)}")
         
     except Exception as e:
-        error_message = f"Translation error: {str(e)}"
-        print(error_message)
+        error_message = str(e)
+        print(f"Translation error: {error_message}")
         return jsonify({
             'success': False,
             'error': error_message
