@@ -2,6 +2,42 @@ let translateTimeout;
 const DEBOUNCE_DELAY = 500; // milliseconds
 let currentMode = 'text';
 
+// Add these functions at the beginning of the file
+function showLoading(message = 'Processing...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const status = document.getElementById('loadingStatus');
+    status.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showToast(message, type = 'success') {
+    // Create toast container if it doesn't exist
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    // Create toast
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    // Add to container
+    container.appendChild(toast);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // Load saved language preference
 document.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('preferredLanguage');
@@ -186,14 +222,14 @@ function preventDefaults(e) {
     });
 });
 
-dropZone.addEventListener('drop', handleDrop);
-fileInput.addEventListener('change', handleFileSelect);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const file = dt.files[0];
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
     handleFile(file);
-}
+});
+
+fileInput.addEventListener('change', handleFileSelect);
 
 function handleFileSelect(e) {
     const file = e.target.files[0];
@@ -202,40 +238,41 @@ function handleFileSelect(e) {
 
 async function handleFile(file) {
     const statusText = document.getElementById('statusText');
-    statusText.textContent = 'Uploading and translating...';
-    
-    // Debug: Log file details
-    console.log('File being uploaded:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-    });
-    
+    const progressBar = document.getElementById('uploadProgress');
+    const progressElement = progressBar.querySelector('.progress-bar');
+    const progressStatus = document.getElementById('progressStatus');
+
+    // Check file size (10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+        showToast('File size exceeds 10MB limit', 'error');
+        return;
+    }
+
+    // Show progress bar
+    progressBar.style.display = 'block';
+    progressElement.style.width = '0%';
+    progressStatus.textContent = '0%';
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('target_lang', document.getElementById('targetLang').value);
-    
+
     try {
-        console.log('Starting file upload...');
+        showLoading('Uploading file...');
+        statusText.textContent = 'Uploading...';
+
         const response = await fetch('/translate-document', {
             method: 'POST',
             body: formData
         });
-        
-        console.log('Server response:', response.status, response.statusText);
-        
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+
+        if (!response.ok) {
             const errorData = await response.json();
-            console.error('Server returned error:', errorData);
             throw new Error(errorData.error || 'Translation failed');
         }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        console.log('Translation successful, preparing download...');
+
+        showLoading('Downloading translated file...');
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -245,11 +282,24 @@ async function handleFile(file) {
         a.click();
         window.URL.revokeObjectURL(url);
         a.remove();
-        
+
+        hideLoading();
+        showToast('Translation completed successfully!');
         statusText.textContent = 'Translation complete';
+        
+        // Reset progress bar
+        setTimeout(() => {
+            progressBar.style.display = 'none';
+            progressElement.style.width = '0%';
+        }, 1000);
+
     } catch (error) {
-        console.error('Translation error:', error);
+        hideLoading();
+        showToast(error.message, 'error');
         statusText.textContent = 'Translation failed';
-        alert(`Translation failed: ${error.message}\n\nPlease check the browser console for more details.`);
+        console.error('Translation error:', error);
+        
+        // Reset progress bar
+        progressBar.style.display = 'none';
     }
 }

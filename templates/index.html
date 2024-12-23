@@ -8,6 +8,11 @@
     <link href="static/css/styles.css" rel="stylesheet" />
 </head>
 <body>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div id="loadingStatus" class="loading-status">Processing...</div>
+    </div>
+
     <div class="header-container">
         <div class="container">
             <div class="d-flex flex-items-center flex-justify-between">
@@ -69,11 +74,22 @@
                             <input type="file" id="fileInput" style="display: none;" 
                                    accept=".txt,.pdf,.docx,.pptx,.xlsx,.html">
                             <div class="upload-content">
-                                <svg height="24" viewBox="0 0 24 24" width="24">
-                                    <path d="M12 2l4 4h-3v9h-2V6H8l4-4zm7 18H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
-                                </svg>
-                                <p>Drag & drop a file or click to upload</p>
-                                <small>Supported formats: TXT, PDF, DOCX, PPTX, XLSX, HTML</small>
+                                <div class="upload-icon">
+                                    <svg height="24" viewBox="0 0 24 24" width="24">
+                                        <path d="M12 2l4 4h-3v9h-2V6H8l4-4zm7 18H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
+                                    </svg>
+                                </div>
+                                <p class="upload-text">Drag & drop a file or click to upload</p>
+                                <div class="upload-info">
+                                    <small>Supported formats: TXT, PDF, DOCX, PPTX, XLSX, HTML</small>
+                                    <small>Maximum file size: 10MB</small>
+                                </div>
+                                <div id="uploadProgress" class="upload-progress" style="display: none;">
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div id="progressStatus" class="progress-status">0%</div>
+                                </div>
                             </div>
                         </form>
                     </div>
