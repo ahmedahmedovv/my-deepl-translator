@@ -134,3 +134,47 @@ body {
     width: 16px;
     height: 16px;
 }
+
+.translation-type-toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.translation-type-toggle .btn.selected {
+    background-color: var(--color-btn-selected-bg);
+}
+
+.document-panel {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-area {
+    width: 100%;
+    max-width: 500px;
+    border: 2px dashed var(--color-border-default);
+    border-radius: 6px;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.upload-area.drag-over {
+    border-color: var(--color-accent-fg);
+    background-color: var(--color-canvas-subtle);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--color-fg-muted);
+}
+
+.upload-content svg {
+    fill: currentColor;
+}

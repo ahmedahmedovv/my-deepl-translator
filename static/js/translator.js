@@ -1,5 +1,6 @@
 let translateTimeout;
 const DEBOUNCE_DELAY = 500; // milliseconds
+let currentMode = 'text';
 
 // Load saved language preference
 document.addEventListener('DOMContentLoaded', () => {
@@ -144,3 +145,111 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('xcopyButton')
         .addEventListener('click', xCopyTranslation);
 });
+
+// Add after DOMContentLoaded event
+document.getElementById('textModeBtn').addEventListener('click', () => switchMode('text'));
+document.getElementById('documentModeBtn').addEventListener('click', () => switchMode('document'));
+
+function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('textModeBtn').classList.toggle('selected', mode === 'text');
+    document.getElementById('documentModeBtn').classList.toggle('selected', mode === 'document');
+    
+    document.querySelector('.panels-container').style.display = mode === 'text' ? 'flex' : 'none';
+    document.getElementById('documentUploadPanel').style.display = mode === 'document' ? 'flex' : 'none';
+}
+
+// Document upload handling
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('drag-over');
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('drag-over');
+    });
+});
+
+dropZone.addEventListener('drop', handleDrop);
+fileInput.addEventListener('change', handleFileSelect);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const file = dt.files[0];
+    handleFile(file);
+}
+
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    handleFile(file);
+}
+
+async function handleFile(file) {
+    const statusText = document.getElementById('statusText');
+    statusText.textContent = 'Uploading and translating...';
+    
+    // Debug: Log file details
+    console.log('File being uploaded:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+    });
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('target_lang', document.getElementById('targetLang').value);
+    
+    try {
+        console.log('Starting file upload...');
+        const response = await fetch('/translate-document', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('Server response:', response.status, response.statusText);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            console.error('Server returned error:', errorData);
+            throw new Error(errorData.error || 'Translation failed');
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        console.log('Translation successful, preparing download...');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `translated_${file.name}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        
+        statusText.textContent = 'Translation complete';
+    } catch (error) {
+        console.error('Translation error:', error);
+        statusText.textContent = 'Translation failed';
+        alert(`Translation failed: ${error.message}\n\nPlease check the browser console for more details.`);
+    }
+}
