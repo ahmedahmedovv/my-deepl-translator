@@ -211,9 +211,9 @@
 
     <main class="container mx-auto px-2 sm:px-4 pt-14 sm:pt-16 pb-4 max-w-[1920px] h-[calc(100vh-3rem)]">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg h-full transition-colors duration-200">
-            <div class="grid grid-cols-1 lg:grid-cols-2 h-full divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
+            <div class="grid grid-cols-1 lg:grid-cols-2 h-full relative">
                 <!-- Input Section -->
-                <div class="relative h-full flex flex-col">
+                <div class="relative h-full flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
                     <div class="flex justify-between items-center h-[44px] sm:h-[52px] px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-3">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Input Text</label>
@@ -241,6 +241,17 @@
                                 <i class="fas fa-paste"></i>
                             </button>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Swap Button with larger background coverage -->
+                <div class="fixed lg:absolute bottom-4 lg:bottom-auto right-4 lg:right-auto lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 z-20">
+                    <div class="bg-white dark:bg-gray-800 rounded-full p-0.5 shadow-lg">
+                        <button onclick="swapLanguages()" 
+                            class="p-3 lg:p-2 rounded-full bg-blue-500 dark:bg-blue-600 shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors text-white micro-button border border-blue-400 dark:border-blue-500"
+                            title="Swap languages (Ctrl+S)">
+                            <i class="fas fa-exchange-alt text-lg lg:text-base"></i>
+                        </button>
                     </div>
                 </div>
                 
