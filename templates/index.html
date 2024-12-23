@@ -514,6 +514,8 @@
 
         // Add language change handler
         function handleLanguageChange() {
+            const targetLang = document.getElementById('targetLang').value;
+            saveTargetLanguage(targetLang);
             if (inputText.value.trim()) {
                 clearTimeout(translateTimeout);
                 translateTimeout = setTimeout(() => {
@@ -1039,6 +1041,29 @@
                 loadingIndicator.style.transition = '';
             }, 200);
         }
+
+        // Function to save target language preference
+        function saveTargetLanguage(lang) {
+            localStorage.setItem('preferred_target_lang', lang);
+        }
+
+        // Function to load target language preference
+        function loadTargetLanguage() {
+            const savedLang = localStorage.getItem('preferred_target_lang');
+            if (savedLang) {
+                document.getElementById('targetLang').value = savedLang;
+                // Also update document modal's language selector if it exists
+                const documentTargetLang = document.getElementById('documentTargetLang');
+                if (documentTargetLang) {
+                    documentTargetLang.value = savedLang;
+                }
+            }
+        }
+
+        // Add this to initialize the saved language when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTargetLanguage();
+        });
     </script>
 </body>
 </html>
