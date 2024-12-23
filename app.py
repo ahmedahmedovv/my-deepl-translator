@@ -4,6 +4,8 @@ import deepl
 import os
 from werkzeug.utils import secure_filename
 import io
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Load environment variables
 load_dotenv()
@@ -150,4 +152,17 @@ def api_usage():
     return jsonify(get_api_usage())
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Configure logging
+    if not app.debug:
+        file_handler = RotatingFileHandler('translator.log', maxBytes=10240, backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Translator startup')
+
+    # Use environment variable for port if available (for production)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
