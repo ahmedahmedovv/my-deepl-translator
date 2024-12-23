@@ -23,6 +23,21 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Add this after initializing the translator
+def get_api_usage():
+    try:
+        usage = translator.get_usage()
+        character_count = usage.character.count
+        character_limit = usage.character.limit
+        percent_used = (character_count / character_limit) * 100 if character_limit else 0
+        return {
+            'count': character_count,
+            'limit': character_limit,
+            'percent': round(percent_used, 1)
+        }
+    except:
+        return {'count': 0, 'limit': 0, 'percent': 0}
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -129,6 +144,10 @@ def translate_document():
             'success': False,
             'error': error_message
         }), 400
+
+@app.route('/api-usage', methods=['GET'])
+def api_usage():
+    return jsonify(get_api_usage())
 
 if __name__ == '__main__':
     app.run(debug=True)

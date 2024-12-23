@@ -17,7 +17,17 @@
     <div class="header-container">
         <div class="container">
             <div class="d-flex flex-items-center flex-justify-between">
-                <h1 class="header-title">My DeepL Translator</h1>
+                <div class="d-flex flex-items-center">
+                    <h1 class="header-title">My DeepL Translator</h1>
+                    <div class="api-usage-container ml-3">
+                        <div class="api-usage-bar">
+                            <div class="api-usage-progress" id="apiUsageProgress"></div>
+                        </div>
+                        <div class="api-usage-tooltip">
+                            <span id="apiUsageText">Loading usage...</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="d-flex flex-items-center">
                     <span class="status-badge mr-2" id="detectedLang">
                         Detected: -

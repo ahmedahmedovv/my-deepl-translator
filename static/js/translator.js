@@ -106,6 +106,13 @@ async function translateText() {
         statusText.textContent = 'Translation failed';
         alert('Error: ' + error.message);
     }
+
+    try {
+        // After successful translation
+        await updateApiUsage();
+    } catch (error) {
+        console.error('Translation error:', error);
+    }
 }
 
 async function copyTranslation() {
@@ -391,4 +398,44 @@ document.addEventListener('DOMContentLoaded', () => {
         ${createIconWithTooltip('document', 'Switch to document mode')}
         Document
     `;
+});
+
+// Add this function to update the API usage bar
+async function updateApiUsage() {
+    try {
+        const response = await fetch('/api-usage');
+        const data = await response.json();
+        
+        const progressBar = document.getElementById('apiUsageProgress');
+        const usageText = document.getElementById('apiUsageText');
+        
+        // Update progress bar
+        progressBar.style.width = `${data.percent}%`;
+        
+        // Update color based on usage
+        progressBar.className = 'api-usage-progress';
+        if (data.percent < 50) {
+            progressBar.classList.add('low');
+        } else if (data.percent < 80) {
+            progressBar.classList.add('medium');
+        } else {
+            progressBar.classList.add('high');
+        }
+        
+        // Update tooltip text
+        usageText.textContent = `API Usage: ${data.count.toLocaleString()} / ${data.limit.toLocaleString()} (${data.percent}%)`;
+    } catch (error) {
+        console.error('Failed to fetch API usage:', error);
+    }
+}
+
+// Add to DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing code ...
+    
+    // Initial API usage update
+    updateApiUsage();
+    
+    // Update API usage every 5 minutes
+    setInterval(updateApiUsage, 5 * 60 * 1000);
 });

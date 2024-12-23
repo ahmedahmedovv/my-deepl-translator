@@ -485,3 +485,61 @@ body {
     opacity: 1;
     transform: translateX(-50%) translateY(-4px);
 }
+
+/* API Usage Bar styles */
+.api-usage-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+}
+
+.api-usage-bar {
+    width: 100px;
+    height: 4px;
+    background-color: var(--hover-bg);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.api-usage-progress {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+/* Color states for usage levels */
+.api-usage-progress.low {
+    background-color: var(--success-color);
+}
+
+.api-usage-progress.medium {
+    background-color: #eab308; /* Yellow warning color */
+}
+
+.api-usage-progress.high {
+    background-color: var(--error-color);
+}
+
+.api-usage-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--text-primary);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.api-usage-container:hover .api-usage-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
