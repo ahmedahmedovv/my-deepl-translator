@@ -52,6 +52,15 @@
             100% { opacity: 0.6; }
         }
 
+        @keyframes language-change {
+            0% { transform: translateY(-10px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .language-change {
+            animation: language-change 0.3s ease-out;
+        }
+
         .ripple-effect {
             position: relative;
             overflow: hidden;
@@ -217,6 +226,7 @@
                     <div class="flex justify-between items-center h-[44px] sm:h-[52px] px-3 sm:px-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-3">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Input Text</label>
+                            <span id="detectedLang" class="text-xs text-gray-500 dark:text-gray-400"></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="autoTranslateStatus" class="text-xs text-gray-500 dark:text-gray-400 hidden">
@@ -251,6 +261,7 @@
                             class="p-3 lg:p-2 rounded-full bg-blue-500 dark:bg-blue-600 shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors text-white micro-button border border-blue-400 dark:border-blue-500"
                             title="Swap languages (Ctrl+S)">
                             <i class="fas fa-exchange-alt text-lg lg:text-base"></i>
+                            <span class="sr-only">Swap languages</span>
                         </button>
                     </div>
                 </div>
@@ -515,12 +526,14 @@
         // Add language change handler
         function handleLanguageChange() {
             const targetLang = document.getElementById('targetLang').value;
+            console.log('Language changed to:', targetLang);
             saveTargetLanguage(targetLang);
+            
             if (inputText.value.trim()) {
-                clearTimeout(translateTimeout);
-                translateTimeout = setTimeout(() => {
+                // Add slight delay to ensure language selection is updated
+                setTimeout(() => {
                     translateText();
-                }, TRANSLATE_DELAY);
+                }, 100);
             }
         }
 
@@ -584,18 +597,45 @@
         function swapLanguages() {
             const container = document.querySelector('.grid');
             const button = document.querySelector('button[onclick="swapLanguages()"]');
+            const targetLangSelect = document.getElementById('targetLang');
+            
+            // Get the current detected source language and current target language
+            const detectedSourceLang = outputText.dataset.detectedSourceLang;
+            const currentTargetLang = targetLangSelect.value;
             
             button.classList.add('animate-swap');
             container.classList.add('swapping');
             
             if (inputText.value.trim() || outputText.value.trim()) {
+                // Swap text content
                 const tempText = inputText.value;
                 inputText.value = outputText.value;
                 outputText.value = tempText;
                 updateCharacterCount(inputText.value.length);
                 
+                // Only swap languages if we have a detected source language
+                if (detectedSourceLang && currentTargetLang) {
+                    console.log('Swapping languages:', {
+                        from: currentTargetLang,
+                        to: detectedSourceLang
+                    });
+                    
+                    // Update target language selector
+                    targetLangSelect.value = detectedSourceLang;
+                    
+                    // Ensure the change is committed before saving
+                    targetLangSelect.dispatchEvent(new Event('change'));
+                    
+                    // Save the new target language preference
+                    saveTargetLanguage(detectedSourceLang);
+                }
+                
+                // Only trigger translation if we have input text
                 if (inputText.value.trim()) {
-                    translateText();
+                    // Add slight delay to ensure language selection is updated
+                    setTimeout(() => {
+                        translateText();
+                    }, 100);
                 }
             }
             
@@ -672,15 +712,43 @@
         // Enhanced translate function with success feedback
         async function translateText() {
             const text = inputText.value.trim();
-            const targetLang = document.getElementById('targetLang').value;
+            const targetLangSelect = document.getElementById('targetLang');
+            const targetLang = targetLangSelect ? targetLangSelect.value : null;
             const apiKey = localStorage.getItem('deepl_api_key');
             
+            // Debug logging
+            console.log('Translation parameters:', {
+                hasText: !!text,
+                targetLang,
+                targetLangElement: !!targetLangSelect,
+                hasApiKey: !!apiKey
+            });
+
+            // Enhanced validation with more specific error messages
             if (!text) {
                 document.getElementById('autoTranslateStatus').classList.add('hidden');
+                console.log('No text to translate');
                 return;
             }
 
+            if (!targetLangSelect) {
+                console.error('Target language select element not found');
+                alert('Error: Language selector not found');
+                return;
+            }
+
+            if (!targetLang) {
+                console.error('No target language selected');
+                // Try to set a default language
+                targetLangSelect.value = 'EN-US';
+                if (!targetLangSelect.value) {
+                    alert('Please select a target language');
+                    return;
+                }
+            }
+
             if (!apiKey) {
+                console.log('No API key found');
                 alert('Please configure your DeepL API key first');
                 openApiKeyModal();
                 return;
@@ -688,6 +756,12 @@
 
             try {
                 showLoading();
+                console.log('Sending translation request:', {
+                    textLength: text.length,
+                    targetLang: targetLangSelect.value, // Use the potentially updated value
+                    hasApiKey: !!apiKey
+                });
+
                 const response = await fetch('/translate', {
                     method: 'POST',
                     headers: {
@@ -695,7 +769,7 @@
                     },
                     body: JSON.stringify({
                         text: text,
-                        target_lang: targetLang,
+                        target_lang: targetLangSelect.value, // Use the potentially updated value
                         source_lang: null,
                         api_key: apiKey
                     })
@@ -703,29 +777,30 @@
 
                 const data = await response.json();
                 
-                if (response.ok) {
-                    outputText.classList.add('success-animation', 'animate-fade-in');
-                    outputText.value = data.translated_text;
-                    
-                    setTimeout(() => {
-                        outputText.classList.remove('success-animation', 'animate-fade-in');
-                    }, 300);
-                    
-                    // Update API usage with the latest data
-                    if (data.character_count !== undefined && data.character_limit !== undefined) {
-                        apiUsage = {
-                            character_count: data.character_count,
-                            character_limit: data.character_limit
-                        };
-                        updateApiUsage(data.character_count);
-                    }
-                } else {
-                    console.error('Translation failed:', data.error);
-                    alert(data.error || 'Translation failed');
+                if (!response.ok) {
+                    throw new Error(data.error || 'Translation failed');
+                }
+                
+                outputText.classList.add('success-animation', 'animate-fade-in');
+                outputText.value = data.translated_text;
+                outputText.dataset.detectedSourceLang = data.detected_source_lang;
+                
+                // Update detected language display
+                if (data.detected_source_lang) {
+                    updateDetectedLanguage(data.detected_source_lang);
+                }
+                
+                setTimeout(() => {
+                    outputText.classList.remove('success-animation', 'animate-fade-in');
+                }, 300);
+                
+                // Update API usage if available
+                if (data.character_count !== undefined && data.character_limit !== undefined) {
+                    updateApiUsage(data.character_count);
                 }
             } catch (error) {
                 console.error('Translation error:', error);
-                alert('Translation failed. Please try again.');
+                alert(error.message || 'Translation failed. Please try again.');
             } finally {
                 hideLoading();
                 document.getElementById('autoTranslateStatus').classList.add('hidden');
@@ -940,15 +1015,28 @@
         function swapLanguages() {
             const container = document.querySelector('.grid');
             const button = document.querySelector('button[onclick="swapLanguages()"]');
+            const targetLangSelect = document.getElementById('targetLang');
+            
+            // Get the current detected source language from the last translation
+            const detectedSourceLang = outputText.dataset.detectedSourceLang;
             
             button.classList.add('animate-swap');
             container.classList.add('swapping');
             
             if (inputText.value.trim() || outputText.value.trim()) {
+                // Swap text content
                 const tempText = inputText.value;
                 inputText.value = outputText.value;
                 outputText.value = tempText;
                 updateCharacterCount(inputText.value.length);
+                
+                // Update target language if we know the source language
+                if (detectedSourceLang) {
+                    const currentTarget = targetLangSelect.value;
+                    targetLangSelect.value = detectedSourceLang;
+                    // Save the new target language preference
+                    saveTargetLanguage(detectedSourceLang);
+                }
                 
                 if (inputText.value.trim()) {
                     translateText();
@@ -1064,6 +1152,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadTargetLanguage();
         });
+
+        // Add this function to update detected language display
+        function updateDetectedLanguage(lang) {
+            const detectedLangElement = document.getElementById('detectedLang');
+            if (lang) {
+                const langName = getLangName(lang); // Create a mapping function for language codes to names
+                detectedLangElement.textContent = `Detected: ${langName}`;
+                detectedLangElement.classList.add('language-change');
+                setTimeout(() => detectedLangElement.classList.remove('language-change'), 300);
+            } else {
+                detectedLangElement.textContent = '';
+            }
+        }
+
+        // Language code to name mapping function
+        function getLangName(code) {
+            const langMap = {
+                'EN': 'English',
+                'DE': 'German',
+                'FR': 'French',
+                // Add more mappings as needed
+            };
+            return langMap[code.toUpperCase()] || code;
+        }
     </script>
 </body>
 </html>
