@@ -4,6 +4,8 @@ import os
 from dotenv import load_dotenv
 import time
 from werkzeug.utils import secure_filename
+import sys
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
@@ -16,6 +18,8 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 def get_translator(api_key=None):
     """Get a DeepL translator instance with the given API key or default key."""
@@ -178,4 +182,5 @@ def upload_document():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.getenv('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)

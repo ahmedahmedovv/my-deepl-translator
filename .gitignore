@@ -34,4 +34,17 @@ ENV/
 *.swo
 
 # Uploads folder
-uploads/ 
+uploads/
+
+# Railway specific
+*.log
+railway.json
+.railway/
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/ 
