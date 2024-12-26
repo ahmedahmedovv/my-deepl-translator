@@ -1,9 +1,5 @@
-__pycache__
-*.pyc
-env/
-venv/
-.env
-.env.local
+fly.toml
 .git/
-.gitignore
-uploads/ 
+__pycache__/
+.envrc
+.venv/
