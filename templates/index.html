@@ -232,11 +232,11 @@
                             <span id="autoTranslateStatus" class="text-xs text-gray-500 dark:text-gray-400 hidden">
                                 Auto-translating...
                             </span>
-                            <span id="inputCount" class="text-sm text-gray-500 dark:text-gray-400">0/5000</span>
+                            <span id="inputCount" class="text-sm text-gray-500 dark:text-gray-400">0/50000</span>
                         </div>
                     </div>
                     <div class="relative group flex-grow">
-                        <textarea id="inputText" maxlength="5000" 
+                        <textarea id="inputText" maxlength="50000" 
                             class="w-full h-full p-4 border-0 focus:ring-0 bg-transparent dark:text-white resize-none text-lg" 
                             placeholder="Enter text to translate..."></textarea>
                         <div class="absolute right-2 top-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -490,7 +490,7 @@
         let previousCount = 0;
         function updateCharacterCount(count) {
             const countElement = document.getElementById('inputCount');
-            countElement.textContent = `${count}/5000`;
+            countElement.textContent = `${count}/50000`;
             
             if (count !== previousCount) {
                 countElement.classList.remove('animate-character-count');
@@ -541,7 +541,7 @@
             try {
                 const text = await navigator.clipboard.readText();
                 inputText.value = text;
-                inputCount.textContent = `${text.length}/5000`;
+                inputCount.textContent = `${text.length}/50000`;
             } catch (err) {
                 alert('Failed to read clipboard');
             }
@@ -550,7 +550,7 @@
         function clearInput() {
             inputText.value = '';
             outputText.value = '';
-            inputCount.textContent = '0/5000';
+            inputCount.textContent = '0/50000';
         }
 
         function copyTranslation() {
